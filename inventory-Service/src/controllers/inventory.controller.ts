@@ -8,6 +8,8 @@ import {
   getExpiringLots,
   getLowStockLots,
   InventoryServiceError,
+  createMedicationRequest,
+  dispatchMedicationRequest,
 } from "../service/inventory.service";
 
 interface MedicationBody {
@@ -23,6 +25,12 @@ interface LotBody {
   quantity: number;
   minimumStock?: number;
   expirationDate: string;
+}
+
+interface MedicationRequestBody {
+  medication: string;
+  quantity: number;
+  requestedBy: string;
 }
 
 function handleError(res: Response, error: unknown, defaultMessage: string) {
@@ -82,6 +90,35 @@ export async function getLotsController(
     res.status(200).json(lots);
   } catch (error) {
     handleError(res, error, "No se pudieron obtener los lotes");
+  }
+}
+
+export async function createMedicationRequestController(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const requestData = req.body as MedicationRequestBody;
+    const medicationRequest = await createMedicationRequest(requestData);
+    res.status(201).json(medicationRequest);
+  } catch (error) {
+    handleError(res, error, "No se pudo crear la solicitud de medicamentos");
+  }
+}
+
+export async function dispatchMedicationRequestController(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  try {
+    const id = req.params.id;
+    if (typeof id !== "string") {
+      throw new InventoryServiceError("El id de la solicitud no es válido", 400);
+    }
+    const medicationRequest = await dispatchMedicationRequest(id);
+    res.status(200).json(medicationRequest);
+  } catch (error) {
+    handleError(res, error, "No se pudo despachar la solicitud");
   }
 }
 

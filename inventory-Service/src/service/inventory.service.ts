@@ -1,6 +1,7 @@
 import { Types } from "mongoose";
 import { Medication } from "../models/Medication";
 import { InventoryLot } from "../models/InventoryLot";
+import { MedicationRequest } from "../models/MedicationRequest";
 
 interface createMedicationInput {
   name: string;
@@ -14,6 +15,11 @@ interface CreateLotInput {
   quantity: number;
   minimumStock: number;
   expirationDate: string;
+}
+interface CreateMedicationRequestInput {
+  medication: string;
+  quantity: number;
+  requestedBy: string;
 }
 
 export class InventoryServiceError extends Error {
@@ -82,6 +88,167 @@ export async function createLot(input: CreateLotInput) {
 
 export async function getLots() {
   return InventoryLot.find().populate("medication").sort({ expirationDate: 1 });
+}
+
+export async function createMedicationRequest(
+  input: CreateMedicationRequestInput,
+) {
+  if (!Types.ObjectId.isValid(input.medication)) {
+    throw new InventoryServiceError("El id del medicamento no es válido", 400);
+  }
+
+  if (!Number.isInteger(input.quantity) || input.quantity < 1) {
+    throw new InventoryServiceError(
+      "La cantidad solicitada debe ser un entero positivo",
+      400,
+    );
+  }
+
+  if (typeof input.requestedBy !== "string" || !input.requestedBy.trim()) {
+    throw new InventoryServiceError(
+      "El solicitante es obligatorio",
+      400,
+    );
+  }
+
+  const medication = await Medication.findOne({
+    _id: input.medication,
+    active: true,
+  });
+  if (!medication) {
+    throw new InventoryServiceError(
+      "El medicamento no existe o está inactivo",
+      404,
+    );
+  }
+
+  return MedicationRequest.create({
+    medication: medication._id,
+    quantity: input.quantity,
+    requestedBy: input.requestedBy.trim(),
+  });
+}
+
+export async function dispatchMedicationRequest(id: string) {
+  if (!Types.ObjectId.isValid(id)) {
+    throw new InventoryServiceError(
+      "El id de la solicitud no es válido",
+      400,
+    );
+  }
+
+  const request = await MedicationRequest.findOneAndUpdate(
+    { _id: id, status: "pending" },
+    { $set: { status: "dispatching" } },
+    { new: true },
+  );
+
+  if (!request) {
+    const existingRequest = await MedicationRequest.findById(id);
+    if (!existingRequest) {
+      throw new InventoryServiceError("La solicitud no existe", 404);
+    }
+    throw new InventoryServiceError(
+      existingRequest.status === "dispatched"
+        ? "La solicitud ya fue despachada"
+        : "La solicitud ya se está procesando",
+      409,
+    );
+  }
+
+  const dispatchedLots: Array<{ lot: Types.ObjectId; quantity: number }> = [];
+  let dispatchCompleted = false;
+  try {
+    const lots = await InventoryLot.find({
+      medication: request.medication,
+      quantity: { $gt: 0 },
+      expirationDate: { $gt: new Date() },
+    }).sort({ expirationDate: 1, _id: 1 });
+
+    const availableQuantity = lots.reduce(
+      (total, lot) => total + lot.quantity,
+      0,
+    );
+    if (availableQuantity < request.quantity) {
+      throw new InventoryServiceError(
+        "No hay stock suficiente para despachar la solicitud",
+        409,
+      );
+    }
+
+    let remainingQuantity = request.quantity;
+    for (const lot of lots) {
+      if (remainingQuantity === 0) {
+        break;
+      }
+
+      const quantity = Math.min(lot.quantity, remainingQuantity);
+      const updatedLot = await InventoryLot.updateOne(
+        { _id: lot._id, quantity: { $gte: quantity } },
+        { $inc: { quantity: -quantity } },
+      );
+      if (updatedLot.modifiedCount !== 1) {
+        throw new InventoryServiceError(
+          "El stock cambió durante el despacho; inténtalo nuevamente",
+          409,
+        );
+      }
+
+      dispatchedLots.push({ lot: lot._id, quantity });
+      remainingQuantity -= quantity;
+    }
+
+    const dispatchedRequest = await MedicationRequest.findOneAndUpdate(
+      { _id: request._id, status: "dispatching" },
+      {
+        $set: {
+          status: "dispatched",
+          dispatchedAt: new Date(),
+          dispatchedLots,
+        },
+      },
+      { new: true },
+    );
+    if (!dispatchedRequest) {
+      throw new InventoryServiceError(
+        "No se pudo actualizar el estado de la solicitud",
+        409,
+      );
+    }
+    dispatchCompleted = true;
+  } catch (error) {
+    if (!dispatchCompleted) {
+      try {
+        for (const dispatchedLot of dispatchedLots) {
+          await InventoryLot.updateOne(
+            { _id: dispatchedLot.lot },
+            { $inc: { quantity: dispatchedLot.quantity } },
+          );
+        }
+      } catch {
+        throw new InventoryServiceError(
+          "Falló el despacho y no se pudo revertir todo el stock; la solicitud requiere revisión",
+          500,
+        );
+      }
+
+      const resetRequest = await MedicationRequest.updateOne(
+        { _id: request._id, status: "dispatching" },
+        { $set: { status: "pending" } },
+      );
+      if (resetRequest.modifiedCount !== 1) {
+        throw new InventoryServiceError(
+          "El stock fue revertido, pero no se pudo restablecer el estado de la solicitud",
+          500,
+        );
+      }
+    }
+    throw error;
+  }
+
+  return MedicationRequest.findById(request._id)
+    .populate("medication")
+    .populate("dispatchedLots.lot");
 }
 
 export async function adjustLotStock(id: string, adjustment: unknown) {

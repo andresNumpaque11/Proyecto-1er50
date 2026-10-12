@@ -7,12 +7,19 @@ import {
   getLotsController,
   getLowStockLotsController,
   getMedicationsController,
+  createMedicationRequestController,
+  dispatchMedicationRequestController,
 } from "../controllers/inventory.controller";
 
 const router = Router();
 
 router.post("/medications", createMedicationController);
 router.get("/medications", getMedicationsController);
+router.post("/medication-requests", createMedicationRequestController);
+router.post(
+  "/medication-requests/:id/dispatch",
+  dispatchMedicationRequestController,
+);
 router.post("/lots", createLotController);
 router.get("/lots", getLotsController);
 router.patch("/lots/:id/stock", adjustLotStockController);
