@@ -6,9 +6,17 @@ def register(client, email="person@example.com", password="safe-password-123"):
 
 
 def test_register_login_and_get_profile(client):
-    created = register(client)
+    created = client.post(
+        "/api/auth/register",
+        json={
+            "full_name": "Test Person",
+            "email": "person@example.com",
+            "password": "safe-password-123",
+            "role": "farmaceutico",
+        },
+    )
     assert created.status_code == 201
-    assert created.json()["role"] == "user"
+    assert created.json()["role"] == "paciente"
     assert "hashed_password" not in created.json()
 
     logged_in = client.post(
@@ -42,6 +50,46 @@ def test_users_management_requires_admin(client):
     ).json()["access_token"]
     response = client.get("/api/users", headers={"Authorization": f"Bearer {token}"})
     assert response.status_code == 403
+
+
+def test_only_admin_can_create_pharmacist_accounts(client):
+    pharmacist_data = {
+        "full_name": "Pharmacy Staff",
+        "email": "pharmacist@example.com",
+        "password": "safe-password-123",
+    }
+    public_create = client.post("/api/users/pharmacists", json=pharmacist_data)
+    assert public_create.status_code == 401
+
+    admin_token = client.post(
+        "/api/auth/login",
+        json={"email": "admin@example.com", "password": "admin-password-123"},
+    ).json()["access_token"]
+    patient_create = client.post(
+        "/api/users/pharmacists",
+        json=pharmacist_data,
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert patient_create.status_code == 201
+    assert patient_create.json()["role"] == "farmaceutico"
+    assert "hashed_password" not in patient_create.json()
+
+    duplicate = client.post(
+        "/api/users/pharmacists",
+        json=pharmacist_data,
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert duplicate.status_code == 409
+
+    pharmacist_token = client.post(
+        "/api/auth/login",
+        json={"email": "pharmacist@example.com", "password": "safe-password-123"},
+    ).json()["access_token"]
+    forbidden = client.get(
+        "/api/users",
+        headers={"Authorization": f"Bearer {pharmacist_token}"},
+    )
+    assert forbidden.status_code == 403
 
 
 def test_admin_can_manage_users_but_cannot_disable_last_admin(client):

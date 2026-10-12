@@ -4,7 +4,7 @@ type User = {
   id: number;
   full_name: string;
   email: string;
-  role: "admin" | "user";
+  role: "admin" | "paciente" | "farmaceutico";
   is_active: boolean;
   created_at: string;
 };
@@ -12,6 +12,12 @@ type User = {
 type AuthResponse = {
   access_token: string;
   user: User;
+};
+
+const roleLabels: Record<User["role"], string> = {
+  admin: "Administrador",
+  paciente: "Paciente",
+  farmaceutico: "Farmacéutico",
 };
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
@@ -39,6 +45,7 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [registering, setRegistering] = useState(false);
+  const [creatingPharmacist, setCreatingPharmacist] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
@@ -100,6 +107,28 @@ export default function App() {
       }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Error de autenticación.");
+    }
+  }
+
+  async function handleCreatePharmacist(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    setNotice("");
+    const data = new FormData(event.currentTarget);
+    try {
+      const pharmacist = await request<User>("/api/users/pharmacists", token, {
+        method: "POST",
+        body: JSON.stringify({
+          full_name: String(data.get("full_name")),
+          email: String(data.get("email")),
+          password: String(data.get("password")),
+        }),
+      });
+      setUsers((existing) => [...existing, pharmacist]);
+      setCreatingPharmacist(false);
+      setNotice("Cuenta de farmacéutico creada.");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "No se pudo crear la cuenta.");
     }
   }
 
@@ -180,7 +209,7 @@ export default function App() {
     <main className="dashboard">
       <header className="topbar">
         <a className="brand" href="#"><span className="brand-icon">U</span> Usuarios</a>
-        <div className="account"><span className="avatar">{user.full_name[0]?.toUpperCase()}</span><span className="account-name">{user.full_name}<small>{user.role === "admin" ? "Administrador" : "Usuario"}</small></span><button className="logout-button" onClick={signOut}>Cerrar sesión</button></div>
+        <div className="account"><span className="avatar">{user.full_name[0]?.toUpperCase()}</span><span className="account-name">{user.full_name}<small>{roleLabels[user.role]}</small></span><button className="logout-button" onClick={signOut}>Cerrar sesión</button></div>
       </header>
       <section className="welcome">
         <p className="eyebrow">PANEL DE CONTROL</p>
@@ -191,18 +220,29 @@ export default function App() {
       {notice && <p className="message success dashboard-message" role="status">{notice}</p>}
       {user.role === "admin" ? (
         <section className="user-card">
-          <div className="section-heading"><div><h2>Cuentas registradas</h2><p>{users.length} {users.length === 1 ? "usuario" : "usuarios"} en el sistema</p></div><span className="count-badge">{users.length}</span></div>
+          <div className="section-heading">
+            <div><h2>Cuentas registradas</h2><p>{users.length} {users.length === 1 ? "cuenta" : "cuentas"} en el sistema</p></div>
+            <div className="section-actions"><span className="count-badge">{users.length}</span><button className="primary-button create-pharmacist-button" onClick={() => { setCreatingPharmacist(!creatingPharmacist); setError(""); setNotice(""); }}>{creatingPharmacist ? "Cancelar" : "Crear farmacéutico"}</button></div>
+          </div>
+          {creatingPharmacist && (
+            <form className="pharmacist-form" onSubmit={handleCreatePharmacist}>
+              <label>Nombre completo<input name="full_name" required minLength={2} maxLength={120} autoComplete="name" /></label>
+              <label>Correo electrónico<input name="email" type="email" required autoComplete="email" /></label>
+              <label>Contraseña inicial<input name="password" type="password" required minLength={8} maxLength={128} autoComplete="new-password" /></label>
+              <button className="primary-button" type="submit">Crear cuenta farmacéutico</button>
+            </form>
+          )}
           <div className="table-wrap">
             <table><thead><tr><th>USUARIO</th><th>ROL</th><th>ESTADO</th><th>REGISTRO</th><th>ACCIONES</th></tr></thead>
               <tbody>{users.map((item) => (
                 <tr key={item.id}>
                   <td><div className="user-cell"><span className="avatar table-avatar">{item.full_name[0]?.toUpperCase()}</span><span>{item.full_name}<small>{item.email}</small></span></div></td>
-                  <td><span className={`role-pill ${item.role}`}>{item.role === "admin" ? "Admin" : "Usuario"}</span></td>
+                  <td><span className={`role-pill ${item.role}`}>{roleLabels[item.role]}</span></td>
                   <td><span className={`status ${item.is_active ? "active" : "inactive"}`}><i />{item.is_active ? "Activo" : "Inactivo"}</span></td>
                   <td>{new Date(item.created_at).toLocaleDateString("es-CO")}</td>
                   <td className="actions">
                     <select aria-label={`Rol de ${item.full_name}`} value={item.role} onChange={(event) => void changeRole(item, event.target.value as User["role"])}>
-                      <option value="user">Usuario</option><option value="admin">Admin</option>
+                      <option value="paciente">Paciente</option><option value="farmaceutico">Farmacéutico</option><option value="admin">Administrador</option>
                     </select>
                     <button className="action-button" onClick={() => void changeStatus(item)}>{item.is_active ? "Desactivar" : "Activar"}</button>
                     <button className="delete-button" aria-label={`Eliminar a ${item.full_name}`} onClick={() => void removeUser(item)}>Eliminar</button>

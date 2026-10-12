@@ -3,6 +3,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
+UserRole = Literal["admin", "paciente", "farmaceutico"]
+
 
 class UserCreate(BaseModel):
     full_name: str = Field(min_length=2, max_length=120)
@@ -39,7 +41,7 @@ class UserResponse(BaseModel):
     id: int
     full_name: str
     email: EmailStr
-    role: Literal["admin", "user"]
+    role: UserRole
     is_active: bool
     created_at: datetime
 
@@ -52,7 +54,7 @@ class TokenResponse(BaseModel):
 
 
 class RoleUpdate(BaseModel):
-    role: Literal["admin", "user"]
+    role: UserRole
 
 
 class StatusUpdate(BaseModel):

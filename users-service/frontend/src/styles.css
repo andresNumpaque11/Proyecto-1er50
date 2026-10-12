@@ -63,6 +63,13 @@ h1, h2, p { margin-top: 0; }
 .section-heading { min-height: 91px; padding: 18px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #edf0f4; }
 .section-heading h2 { margin: 0 0 5px; font: 700 16px Manrope, sans-serif; }
 .section-heading p { margin: 0; color: var(--muted); font-size: 12px; }
+.section-actions { display: flex; align-items: center; gap: 12px; }
+.create-pharmacist-button { width: auto; height: 37px; margin: 0; gap: 8px; font-size: 12px; }
+.pharmacist-form { padding: 18px 24px; display: grid; grid-template-columns: repeat(3, minmax(150px, 1fr)) auto; align-items: end; gap: 14px; border-bottom: 1px solid #edf0f4; background: #fbfcfe; }
+.pharmacist-form label { display: grid; gap: 7px; color: #536076; font-size: 11px; font-weight: 600; }
+.pharmacist-form input { width: 100%; height: 37px; padding: 0 10px; border: 1px solid #e1e6ef; border-radius: 7px; outline: none; font-size: 12px; }
+.pharmacist-form input:focus { border-color: #8297ff; box-shadow: 0 0 0 3px #385cf61c; }
+.pharmacist-form .primary-button { width: auto; height: 37px; margin: 0; white-space: nowrap; font-size: 11px; }
 .count-badge { min-width: 31px; height: 31px; display: grid; place-items: center; border-radius: 9px; color: var(--blue); background: #eef1ff; font-size: 12px; font-weight: 700; }
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; text-align: left; }
@@ -101,4 +108,6 @@ td { padding: 15px 19px; border-top: 1px solid #f0f2f6; color: #536076; white-sp
   .topbar { min-height: 68px; }
   .account-name { display: none; }
   .logout-button { margin-left: 4px; }
+  .pharmacist-form { grid-template-columns: 1fr; }
+  .pharmacist-form .primary-button { width: 100%; }
 }

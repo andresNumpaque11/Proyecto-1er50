@@ -67,6 +67,32 @@ def list_users(
     return list(db.scalars(select(User).order_by(User.id)).all())
 
 
+@users_router.post(
+    "/pharmacists",
+    response_model=UserResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_pharmacist(
+    payload: UserCreate,
+    _admin: User = Depends(require_admin),
+    db: Session = Depends(get_db),
+) -> User:
+    pharmacist = User(
+        full_name=payload.full_name,
+        email=str(payload.email),
+        hashed_password=hash_password(payload.password),
+        role="farmaceutico",
+    )
+    db.add(pharmacist)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Ya existe una cuenta con ese correo.") from None
+    db.refresh(pharmacist)
+    return pharmacist
+
+
 def prevent_last_admin_change(target: User, db: Session) -> None:
     if target.role != "admin" or not target.is_active:
         return

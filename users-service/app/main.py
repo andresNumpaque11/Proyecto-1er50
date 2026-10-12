@@ -8,7 +8,7 @@ load_dotenv()
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from app.database import Base, SessionLocal, engine
 from app.models import User
@@ -43,10 +43,17 @@ def seed_admin() -> None:
             raise RuntimeError("ADMIN_EMAIL ya existe y no tiene el rol de administrador.")
 
 
+def migrate_user_roles() -> None:
+    with SessionLocal() as db:
+        db.execute(update(User).where(User.role == "user").values(role="paciente"))
+        db.commit()
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     validate_auth_settings()
     Base.metadata.create_all(bind=engine)
+    migrate_user_roles()
     seed_admin()
     yield
 
