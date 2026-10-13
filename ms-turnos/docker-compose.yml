@@ -1,0 +1,21 @@
+services:
+  postgres-turnos:
+    image: postgres:16
+    container_name: sigtam-postgres-turnos
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sigtam_turnos
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata_turnos:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d sigtam_turnos"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata_turnos:
