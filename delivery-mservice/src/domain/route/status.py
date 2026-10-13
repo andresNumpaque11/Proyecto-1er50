@@ -1,0 +1,10 @@
+from enum import StrEnum
+
+
+class RouteStatus(StrEnum):
+    OPEN = "OPEN"
+    READY_FOR_ASSIGNMENT = "READY_FOR_ASSIGNMENT"
+    ASSIGNED = "ASSIGNED"
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+    CANCELLED = "CANCELLED"
