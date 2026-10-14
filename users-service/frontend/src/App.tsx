@@ -1,4 +1,5 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
+    //  import TurnosPanel from "./turnos/TurnosPanel";
 
 type User = {
   id: number;
@@ -255,6 +256,7 @@ export default function App() {
       ) : (
         <section className="profile-card"><span className="avatar profile-avatar">{user.full_name[0]?.toUpperCase()}</span><div><p className="eyebrow">TU PERFIL</p><h2>{user.full_name}</h2><p>{user.email}</p><span className="status active"><i />Cuenta activa</span></div></section>
       )}
+      {/* <TurnosPanel user={user} /> */}
       <footer className="footer">Control de acceso basado en roles <span>•</span> Sesión protegida con JWT</footer>
     </main>
   );

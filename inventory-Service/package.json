@@ -13,6 +13,7 @@
   "dependencies": {
     "cors": "^2.8.6",
     "dotenv": "^18.0.6",
+    "eureka-js-client": "^4.5.0",
     "express": "^5.2.1",
     "mongoose": "^9.11.1",
     "redis": "^6.3.0",
@@ -20,9 +21,10 @@
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
+    "@types/eureka-js-client": "^4.5.9",
     "@types/express": "^5.0.6",
     "@types/mongoose": "^5.11.96",
-    "@types/node": "^26.6.4",
+    "@types/node": "^26.6.5",
     "nodemon": "^3.1.14",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2"

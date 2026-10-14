@@ -1,4 +1,6 @@
 import asyncio
+import os
+import py_eureka_client.eureka_client as eureka_client
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Header
@@ -32,9 +34,24 @@ async def lifespan(app: FastAPI):
     planning_task = asyncio.create_task(planning_loop())
     outbox_task = asyncio.create_task(outbox_loop())
 
+    registered = False
+    try:
+        await eureka_client.init_async(
+            eureka_server=os.getenv("EUREKA_SERVER", "http://localhost:8761/eureka/"),
+            app_name="delivery-service",
+            instance_host=os.getenv("EUREKA_INSTANCE_HOST", "localhost"),
+            instance_port=int(os.getenv("EUREKA_INSTANCE_PORT", "8002")),
+        )
+        registered = True
+    except Exception as exc:
+        print(f"No se pudo registrar en Eureka: {exc}")
+
     try:
         yield
     finally:
+        if registered:
+            await eureka_client.stop_async()
+
         planning_task.cancel()
         outbox_task.cancel()
 

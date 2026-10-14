@@ -1,4 +1,5 @@
 import os
+import py_eureka_client.eureka_client as eureka_client
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
@@ -55,7 +56,23 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     Base.metadata.create_all(bind=engine)
     migrate_user_roles()
     seed_admin()
+
+    registered = False
+    try:
+        await eureka_client.init_async(
+            eureka_server=os.getenv("EUREKA_SERVER", "http://localhost:8761/eureka/"),
+            app_name="users-service",
+            instance_host="localhost",
+            instance_port=int(os.getenv("PORT", "8000")),
+        )
+        registered = True
+    except Exception as exc:
+        print(f"No se pudo registrar en Eureka: {exc}")
+
     yield
+
+    if registered:
+        await eureka_client.stop_async()
 
 
 app = FastAPI(
