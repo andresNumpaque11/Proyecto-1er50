@@ -2,7 +2,8 @@ package com.sigtam.ms_turnos.controller;
 
 import com.sigtam.ms_turnos.dto.DisponibilidadDTO;
 import com.sigtam.ms_turnos.dto.DisponibilidadRequestDTO;
-import com.sigtam.ms_turnos.service.DisponibilidadService;
+import com.sigtam.ms_turnos.application.port.in.GestionarDisponibilidadUseCase;
+import com.sigtam.ms_turnos.domain.model.Disponibilidad;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -16,15 +17,31 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DisponibilidadController {
 
-    private final DisponibilidadService disponibilidadService;
+    private final GestionarDisponibilidadUseCase gestionarDisponibilidad;
 
     @PostMapping
     public ResponseEntity<DisponibilidadDTO> crear(@Valid @RequestBody DisponibilidadRequestDTO request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(disponibilidadService.crear(request));
+        Disponibilidad disponibilidad = gestionarDisponibilidad.crear(
+                request.idSede(), request.fecha(), request.horaInicio(),
+                request.horaFin(), request.cupo());
+        return ResponseEntity.status(HttpStatus.CREATED).body(toDTO(disponibilidad));
     }
 
     @GetMapping
     public ResponseEntity<List<DisponibilidadDTO>> listar() {
-        return ResponseEntity.ok(disponibilidadService.listar());
+        return ResponseEntity.ok(gestionarDisponibilidad.listar()
+                .stream()
+                .map(this::toDTO)
+                .toList());
+    }
+
+    private DisponibilidadDTO toDTO(Disponibilidad disponibilidad) {
+        return new DisponibilidadDTO(
+                disponibilidad.getIdDisponibilidad(),
+                disponibilidad.getIdSede(),
+                disponibilidad.getFecha(),
+                disponibilidad.getHoraInicio(),
+                disponibilidad.getHoraFin(),
+                disponibilidad.getCupo());
     }
 }
