@@ -1,5 +1,7 @@
 package com.sigtam.ms_turnos.exception;
 
+import com.sigtam.ms_turnos.application.exception.ConflictoException;
+import com.sigtam.ms_turnos.application.exception.RecursoNoEncontradoException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
