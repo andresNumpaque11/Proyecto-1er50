@@ -12,6 +12,7 @@ export async function connectDB(): Promise<void> {
 
     } catch (error) {
         console.error('Error al conectar Con MongoDB:', error)
+        console.log('prueba de cambio')
         throw error;
     }
 }
