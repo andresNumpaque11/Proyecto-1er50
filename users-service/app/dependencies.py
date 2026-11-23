@@ -1,45 +1,49 @@
 from typing import Annotated
 
-import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
+from app.application.user_use_cases import UserUseCases
 from app.database import get_db
-from app.models import User
-from app.security import ALGORITHM, JWT_SECRET
+from app.domain.user import UserDomainError, UserEntity
+from app.infrastructure.security_adapter import JwtAndPasswordSecurityAdapter
+from app.infrastructure.sqlalchemy_user_repository import SqlAlchemyUserRepository
 
 
 bearer_scheme = HTTPBearer(auto_error=False)
 
 
+def get_user_use_cases(db: Annotated[Session, Depends(get_db)]) -> UserUseCases:
+    return UserUseCases(
+        SqlAlchemyUserRepository(db),
+        JwtAndPasswordSecurityAdapter(),
+    )
+
+
 def get_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(bearer_scheme)],
-    db: Annotated[Session, Depends(get_db)],
-) -> User:
-    unauthorized = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Credenciales no válidas o token expirado.",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+    use_cases: Annotated[UserUseCases, Depends(get_user_use_cases)],
+) -> UserEntity:
     if credentials is None:
-        raise unauthorized
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Credenciales no válidas o token expirado.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     try:
-        payload = jwt.decode(credentials.credentials, JWT_SECRET, algorithms=[ALGORITHM])
-        subject = payload.get("sub")
-        user_id = int(subject)
-    except (jwt.InvalidTokenError, TypeError, ValueError):
-        raise unauthorized from None
-
-    user = db.get(User, user_id)
-    if user is None or not user.is_active:
-        raise unauthorized
-    return user
+        return use_cases.get_profile_by_token(credentials.credentials)
+    except UserDomainError as error:
+        raise HTTPException(
+            status_code=error.status_code,
+            detail=error.detail,
+            headers={"WWW-Authenticate": "Bearer"},
+        ) from None
 
 
 def require_admin(
-    current_user: Annotated[User, Depends(get_current_user)],
-) -> User:
+    current_user: Annotated[UserEntity, Depends(get_current_user)],
+) -> UserEntity:
     if current_user.role != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

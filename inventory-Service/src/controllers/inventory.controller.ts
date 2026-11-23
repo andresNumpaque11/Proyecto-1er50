@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { InventoryDomainError } from "../domain/inventory";
 import {
   createMedication,
   createLot,
@@ -7,7 +8,6 @@ import {
   adjustLotStock,
   getExpiringLots,
   getLowStockLots,
-  InventoryServiceError,
   createMedicationRequest,
   dispatchMedicationRequest,
 } from "../service/inventory.service";
@@ -36,7 +36,7 @@ interface MedicationRequestBody {
 function handleError(res: Response, error: unknown, defaultMessage: string) {
   const message = error instanceof Error ? error.message : defaultMessage;
   const statusCode =
-    error instanceof InventoryServiceError ? error.statusCode : 400;
+    error instanceof InventoryDomainError ? error.statusCode : 400;
   res.status(statusCode).json({ message });
 }
 
@@ -113,7 +113,7 @@ export async function dispatchMedicationRequestController(
   try {
     const id = req.params.id;
     if (typeof id !== "string") {
-      throw new InventoryServiceError("El id de la solicitud no es válido", 400);
+      throw new InventoryDomainError("El id de la solicitud no es válido", 400);
     }
     const medicationRequest = await dispatchMedicationRequest(id);
     res.status(200).json(medicationRequest);
@@ -130,7 +130,7 @@ export async function adjustLotStockController(
     const { adjustment } = req.body as { adjustment?: unknown };
     const id = req.params.id;
     if (typeof id !== "string") {
-      throw new InventoryServiceError("El id del lote no es válido", 400);
+      throw new InventoryDomainError("El id del lote no es válido", 400);
     }
     const lot = await adjustLotStock(id, adjustment);
     res.status(200).json(lot);
