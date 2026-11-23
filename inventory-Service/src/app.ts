@@ -4,6 +4,7 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import { connectDB } from './config/database';
 import inventoryRoutes from './routes/inventory.routes';
+import { registerWithEureka } from './config/eureka';
 
 dotenv.config({ path: '.env' });
 
@@ -37,5 +38,9 @@ async function startServer():Promise<void> {
     }
     
 }
+app.listen(PORT, () => {
+  console.log(`Microservicio de Inventario ejecutándose en el puerto ${PORT}`);
+  registerWithEureka(PORT);
+});
 
 startServer();

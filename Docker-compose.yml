@@ -1,0 +1,82 @@
+name: sigtam
+
+services:
+
+  # ms-turnos -> PostgreSQL (localhost:5432)
+  postgres-turnos:
+    image: postgres:16
+    container_name: sigtam-postgres-turnos
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sigtam_turnos
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata_turnos:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d sigtam_turnos"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # inventory-Service -> MongoDB (localhost:27017)
+  mongo-inventory:
+    image: mongo:8
+    container_name: mongo-inventory
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: "a123"
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_inventory_data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --eval \"db.adminCommand('ping').ok\" | grep -q 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # delivery-mservice -> MongoDB con replica set de un nodo (localhost:27018)
+  # El replica set se inicializa solo desde el healthcheck.
+  mongo-delivery:
+    image: mongo:8
+    container_name: mongo-delivery
+    restart: unless-stopped
+    command: ["mongod", "--replSet", "rs0", "--port", "27018", "--bind_ip_all"]
+    ports:
+      - "27018:27018"
+    volumes:
+      - mongo_delivery_data:/data/db
+    healthcheck:
+      test: >
+        mongosh --quiet --port 27018 --eval
+        "try { rs.status().ok } catch (e) { rs.initiate({_id:'rs0',members:[{_id:0,host:'mongo-delivery:27018'}]}).ok }"
+        | grep -q 1
+      interval: 5s
+      timeout: 10s
+      retries: 20
+      start_period: 10s
+
+  # Redis (localhost:6379), para sesiones/cola de turnos
+  redis:
+    image: redis:7
+    container_name: sigtam-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata_turnos:
+  mongo_inventory_data:
+  mongo_delivery_data:
+  redis_data:
