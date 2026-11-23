@@ -1,6 +1,82 @@
 name: sigtam
 
 services:
+  api-gateway:
+    build:
+      context: ./api-gateway
+    container_name: sigtam-eureka
+    restart: unless-stopped
+    ports:
+      - "8761:8761"
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: sigtam-rabbitmq
+    restart: unless-stopped
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  ms-turnos:
+    build:
+      context: ./ms-turnos
+    container_name: sigtam-ms-turnos
+    restart: unless-stopped
+    depends_on:
+      postgres-turnos:
+        condition: service_healthy
+      api-gateway:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-turnos:5432/sigtam_turnos
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://api-gateway:8761/eureka/
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+    ports:
+      - "8081:8081"
+
+  gateway:
+    build:
+      context: ./gateway
+    container_name: sigtam-gateway
+    restart: unless-stopped
+    depends_on:
+      api-gateway:
+        condition: service_started
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://api-gateway:8761/eureka/
+    ports:
+      - "8080:8080"
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    container_name: sigtam-prometheus
+    restart: unless-stopped
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:12.2.0
+    container_name: sigtam-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
 
   # ms-turnos -> PostgreSQL (localhost:5432)
   postgres-turnos:
@@ -80,3 +156,4 @@ volumes:
   mongo_inventory_data:
   mongo_delivery_data:
   redis_data:
+  grafana_data:

@@ -2,6 +2,7 @@ package com.sigtam.ms_turnos.controller;
 
 import com.sigtam.ms_turnos.dto.DisponibilidadDTO;
 import com.sigtam.ms_turnos.dto.DisponibilidadRequestDTO;
+import com.sigtam.ms_turnos.application.port.in.ConsultarDisponibilidadQuery;
 import com.sigtam.ms_turnos.application.port.in.GestionarDisponibilidadUseCase;
 import com.sigtam.ms_turnos.domain.model.Disponibilidad;
 import jakarta.validation.Valid;
@@ -18,6 +19,7 @@ import java.util.List;
 public class DisponibilidadController {
 
     private final GestionarDisponibilidadUseCase gestionarDisponibilidad;
+    private final ConsultarDisponibilidadQuery consultarDisponibilidad;
 
     @PostMapping
     public ResponseEntity<DisponibilidadDTO> crear(@Valid @RequestBody DisponibilidadRequestDTO request) {
@@ -29,7 +31,7 @@ public class DisponibilidadController {
 
     @GetMapping
     public ResponseEntity<List<DisponibilidadDTO>> listar() {
-        return ResponseEntity.ok(gestionarDisponibilidad.listar()
+        return ResponseEntity.ok(consultarDisponibilidad.listar()
                 .stream()
                 .map(this::toDTO)
                 .toList());

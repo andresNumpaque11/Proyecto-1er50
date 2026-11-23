@@ -1,6 +1,7 @@
 package com.sigtam.ms_turnos.infrastructure.persistence.adapter;
 
-import com.sigtam.ms_turnos.application.port.out.TurnoRepositoryPort;
+import com.sigtam.ms_turnos.application.port.out.TurnoCommandRepositoryPort;
+import com.sigtam.ms_turnos.application.port.out.TurnoQueryRepositoryPort;
 import com.sigtam.ms_turnos.domain.model.EstadoTurno;
 import com.sigtam.ms_turnos.domain.model.Turno;
 import com.sigtam.ms_turnos.infrastructure.persistence.entity.DisponibilidadEntity;
@@ -14,7 +15,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public class TurnoRepositoryAdapter implements TurnoRepositoryPort {
+public class TurnoRepositoryAdapter implements TurnoCommandRepositoryPort, TurnoQueryRepositoryPort {
     private final SpringTurnoRepository turnoRepository;
     private final SpringDisponibilidadRepository disponibilidadRepository;
 

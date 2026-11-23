@@ -1,6 +1,7 @@
 package com.sigtam.ms_turnos.infrastructure.persistence.adapter;
 
-import com.sigtam.ms_turnos.application.port.out.DisponibilidadRepositoryPort;
+import com.sigtam.ms_turnos.application.port.out.DisponibilidadCommandRepositoryPort;
+import com.sigtam.ms_turnos.application.port.out.DisponibilidadQueryRepositoryPort;
 import com.sigtam.ms_turnos.domain.model.Disponibilidad;
 import com.sigtam.ms_turnos.infrastructure.persistence.entity.DisponibilidadEntity;
 import com.sigtam.ms_turnos.infrastructure.persistence.repository.SpringDisponibilidadRepository;
@@ -11,7 +12,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public class DisponibilidadRepositoryAdapter implements DisponibilidadRepositoryPort {
+public class DisponibilidadRepositoryAdapter
+        implements DisponibilidadCommandRepositoryPort, DisponibilidadQueryRepositoryPort {
     private final SpringDisponibilidadRepository repository;
 
     public DisponibilidadRepositoryAdapter(SpringDisponibilidadRepository repository) {

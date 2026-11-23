@@ -13,3 +13,7 @@ El servicio de inventario expone estas rutas:
 El microservicio `users-service` implementa registro e inicio de sesión con JWT y control de acceso para pacientes, farmacéuticos y administradores. El registro público crea pacientes; solo el administrador puede crear cuentas de farmacéutico. Su API utiliza FastAPI y SQLite por defecto; el frontend está construido con React.
 
 Consulta [users-service/README.md](./users-service/README.md) para instalar dependencias y ejecutar ambos componentes. La documentación OpenAPI se publica en `/docs`.
+
+## Manual del sistema
+
+Consulta [MANUAL_PROYECTO.md](./MANUAL_PROYECTO.md) para iniciar el proyecto completo, probar las APIs y revisar RabbitMQ, Prometheus y Grafana.

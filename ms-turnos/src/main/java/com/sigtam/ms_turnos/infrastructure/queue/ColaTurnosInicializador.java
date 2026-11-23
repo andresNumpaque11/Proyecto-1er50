@@ -1,6 +1,6 @@
 package com.sigtam.ms_turnos.infrastructure.queue;
 
-import com.sigtam.ms_turnos.application.port.out.TurnoRepositoryPort;
+import com.sigtam.ms_turnos.application.port.out.TurnoCommandRepositoryPort;
 import com.sigtam.ms_turnos.application.port.out.TurnQueuePort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,10 +12,10 @@ import org.springframework.stereotype.Component;
 public class ColaTurnosInicializador {
     private static final Logger log = LoggerFactory.getLogger(ColaTurnosInicializador.class);
 
-    private final TurnoRepositoryPort turnoRepository;
+    private final TurnoCommandRepositoryPort turnoRepository;
     private final TurnQueuePort colaTurnos;
 
-    public ColaTurnosInicializador(TurnoRepositoryPort turnoRepository,
+    public ColaTurnosInicializador(TurnoCommandRepositoryPort turnoRepository,
                                    TurnQueuePort colaTurnos) {
         this.turnoRepository = turnoRepository;
         this.colaTurnos = colaTurnos;

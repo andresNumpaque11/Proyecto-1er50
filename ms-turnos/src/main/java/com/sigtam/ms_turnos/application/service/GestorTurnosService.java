@@ -3,10 +3,11 @@ package com.sigtam.ms_turnos.application.service;
 import com.sigtam.ms_turnos.application.exception.ConflictoException;
 import com.sigtam.ms_turnos.application.exception.RecursoNoEncontradoException;
 import com.sigtam.ms_turnos.application.port.in.GestionarTurnosUseCase;
-import com.sigtam.ms_turnos.application.port.out.DisponibilidadRepositoryPort;
+import com.sigtam.ms_turnos.application.port.out.DisponibilidadCommandRepositoryPort;
 import com.sigtam.ms_turnos.application.port.out.TransactionPort;
-import com.sigtam.ms_turnos.application.port.out.TurnoRepositoryPort;
+import com.sigtam.ms_turnos.application.port.out.TurnoCommandRepositoryPort;
 import com.sigtam.ms_turnos.application.port.out.TurnQueuePort;
+import com.sigtam.ms_turnos.application.port.out.TurnoEventPublisherPort;
 import com.sigtam.ms_turnos.domain.model.Disponibilidad;
 import com.sigtam.ms_turnos.domain.model.EstadoTurno;
 import com.sigtam.ms_turnos.domain.model.TipoPrioridad;
@@ -20,21 +21,24 @@ import java.util.UUID;
 
 @Service
 public class GestorTurnosService implements GestionarTurnosUseCase {
-    private final TurnoRepositoryPort turnoRepository;
-    private final DisponibilidadRepositoryPort disponibilidadRepository;
+    private final TurnoCommandRepositoryPort turnoRepository;
+    private final DisponibilidadCommandRepositoryPort disponibilidadRepository;
     private final TurnQueuePort colaTurnos;
     private final TransactionPort transaction;
+    private final TurnoEventPublisherPort eventPublisher;
     private final List<EstrategiaPrioridad> estrategias;
 
-    public GestorTurnosService(TurnoRepositoryPort turnoRepository,
-                               DisponibilidadRepositoryPort disponibilidadRepository,
+    public GestorTurnosService(TurnoCommandRepositoryPort turnoRepository,
+                               DisponibilidadCommandRepositoryPort disponibilidadRepository,
                                TurnQueuePort colaTurnos,
                                TransactionPort transaction,
+                               TurnoEventPublisherPort eventPublisher,
                                List<EstrategiaPrioridad> estrategias) {
         this.turnoRepository = turnoRepository;
         this.disponibilidadRepository = disponibilidadRepository;
         this.colaTurnos = colaTurnos;
         this.transaction = transaction;
+        this.eventPublisher = eventPublisher;
         this.estrategias = estrategias;
     }
 
@@ -57,6 +61,7 @@ public class GestorTurnosService implements GestionarTurnosUseCase {
         disponibilidadRepository.save(disponibilidad);
 
         transaction.afterCommit(() -> colaTurnos.add(turno));
+        transaction.afterCommit(() -> eventPublisher.publicarSolicitado(turno));
         return turno;
     }
 
@@ -80,6 +85,7 @@ public class GestorTurnosService implements GestionarTurnosUseCase {
         turno.cancelar();
         Turno guardado = turnoRepository.save(turno);
         transaction.afterCommit(() -> colaTurnos.remove(idTurno));
+        transaction.afterCommit(() -> eventPublisher.publicarCancelado(guardado));
         return guardado;
     }
 
@@ -95,15 +101,11 @@ public class GestorTurnosService implements GestionarTurnosUseCase {
 
             transaction.afterRollback(() -> colaTurnos.add(turno));
             turno.atender();
-            return turnoRepository.save(turno);
+            Turno guardado = turnoRepository.save(turno);
+            transaction.afterCommit(() -> eventPublisher.publicarAtendido(guardado));
+            return guardado;
         }
         throw new ConflictoException("No hay turnos en espera");
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<Turno> consultarPorPaciente(String idPaciente) {
-        return turnoRepository.findByIdPaciente(idPaciente);
     }
 
     private EstrategiaPrioridad seleccionarEstrategia(boolean esUrgente) {
