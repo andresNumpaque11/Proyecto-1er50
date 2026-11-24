@@ -4,7 +4,7 @@ import {
   type LotInput,
   type MedicationInput,
   type MedicationRequestInput,
-} from "../domain/inventory";
+} from "../inventory";
 import type { InventoryRepositoryPort } from "./ports";
 
 export class InventoryUseCases {

@@ -1,6 +1,6 @@
-import { InventoryUseCases } from "../application/inventory.use-cases";
-import { InventoryDomainError, type LotInput, type MedicationInput, type MedicationRequestInput } from "../domain/inventory";
-import { MongooseInventoryRepository } from "../infrastructure/persistence/MongooseInventoryRepository";
+import { InventoryUseCases } from "../../domain/ports/inventory.use-cases";
+import { InventoryDomainError, type LotInput, type MedicationInput, type MedicationRequestInput } from "../../domain/inventory";
+import { MongooseInventoryRepository } from "../../infrastructure/persistence/MongooseInventoryRepository";
 
 export { InventoryDomainError as InventoryServiceError };
 

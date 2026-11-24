@@ -1,9 +1,9 @@
-from app.security import (
+from app.infrastructure.security.security import (
     create_access_token,
     hash_password,
     verify_password,
 )
-from app.security import JWT_SECRET, ALGORITHM
+from app.infrastructure.security.security import JWT_SECRET, ALGORITHM
 import jwt
 
 

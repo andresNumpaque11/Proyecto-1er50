@@ -3,7 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.domain.user import UserDomainError, UserEntity
-from app.models import User
+from app.infrastructure.db.models import User
 
 
 class SqlAlchemyUserRepository:

@@ -1,4 +1,4 @@
-from app.application.ports import SecurityPort, UserRepositoryPort
+from app.domain.ports import SecurityPort, UserRepositoryPort
 from app.domain.user import UserDomainError, UserEntity
 
 

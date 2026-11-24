@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.application.user_use_cases import UserUseCases
-from app.dependencies import get_current_user, get_user_use_cases, require_admin
+from app.infrastructure.api.dependencies import get_current_user, get_user_use_cases, require_admin
 from app.domain.user import UserDomainError, UserEntity
-from app.schemas import (
+from app.infrastructure.api.schemas import (
     LoginRequest,
     RoleUpdate,
     StatusUpdate,
@@ -11,7 +11,7 @@ from app.schemas import (
     UserCreate,
     UserResponse,
 )
-from app.security import ACCESS_TOKEN_MINUTES
+from app.infrastructure.security.security import ACCESS_TOKEN_MINUTES
 
 
 auth_router = APIRouter(prefix="/api/auth", tags=["Autenticación"])

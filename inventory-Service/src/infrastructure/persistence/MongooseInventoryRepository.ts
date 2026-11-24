@@ -1,7 +1,7 @@
-import { Medication } from "../../models/Medication";
-import { InventoryLot } from "../../models/InventoryLot";
-import { MedicationRequest } from "../../models/MedicationRequest";
-import type { InventoryRepositoryPort } from "../../application/ports";
+import { Medication } from "../../domain/model/Medication";
+import { InventoryLot } from "../../domain/model/InventoryLot";
+import { MedicationRequest } from "../../domain//model/MedicationRequest";
+import type { InventoryRepositoryPort } from "../../domain/ports/ports";
 import { InventoryDomainError } from "../../domain/inventory";
 import type { Types } from "mongoose";
 
