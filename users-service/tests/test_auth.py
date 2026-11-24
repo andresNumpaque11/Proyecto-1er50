@@ -144,3 +144,14 @@ def test_protected_route_rejects_missing_and_invalid_tokens(client):
     assert client.get(
         "/api/auth/me", headers={"Authorization": "Bearer not-a-token"}
     ).status_code == 401
+
+
+def test_metrics_endpoint_exposes_http_request_metrics(client):
+    assert client.get("/health").status_code == 200
+
+    metrics = client.get("/metrics")
+
+    assert metrics.status_code == 200
+    assert "http_requests_total" in metrics.text
+    assert 'route="/health"' in metrics.text
+    assert "http_request_duration_seconds" in metrics.text

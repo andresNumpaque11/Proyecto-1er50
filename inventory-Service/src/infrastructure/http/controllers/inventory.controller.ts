@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { InventoryDomainError } from "../domain/inventory";
+import { InventoryDomainError } from "../../../domain/inventory";
 import {
   createMedication,
   createLot,
@@ -10,7 +10,7 @@ import {
   getLowStockLots,
   createMedicationRequest,
   dispatchMedicationRequest,
-} from "../service/inventory.service";
+} from "../../../application/service/inventory.service";
 
 interface MedicationBody {
   name: string;

@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
+  "engines": {
+    "node": "^22 || ^24 || >=26"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "tsx watch src/app.ts"
@@ -11,6 +14,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@prometheus-io/client": "^0.16.1",
     "cors": "^2.8.6",
     "dotenv": "^18.0.6",
     "eureka-js-client": "^4.5.0",

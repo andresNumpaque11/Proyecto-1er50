@@ -5,10 +5,10 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.application.user_use_cases import UserUseCases
-from app.database import get_db
+from app.infrastructure.config.database import get_db
 from app.domain.user import UserDomainError, UserEntity
-from app.infrastructure.security_adapter import JwtAndPasswordSecurityAdapter
-from app.infrastructure.sqlalchemy_user_repository import SqlAlchemyUserRepository
+from app.infrastructure.security.security_adapter import JwtAndPasswordSecurityAdapter
+from app.infrastructure.persistence.sqlalchemy_user_repository import SqlAlchemyUserRepository
 
 
 bearer_scheme = HTTPBearer(auto_error=False)

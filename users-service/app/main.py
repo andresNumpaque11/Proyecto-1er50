@@ -9,12 +9,13 @@ load_dotenv()
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.infrastructure.monitoring.prometheus import collect_http_metrics, metrics_response
 from sqlalchemy import select, update
 
-from app.database import Base, SessionLocal, engine
-from app.models import User
-from app.routes import auth_router, users_router
-from app.security import hash_password, validate_auth_settings
+from app.infrastructure.config.database import Base, SessionLocal, engine
+from app.infrastructure.db.models import User
+from app.infrastructure.api.routes import auth_router, users_router
+from app.infrastructure.security.security import hash_password, validate_auth_settings
 
 
 def seed_admin() -> None:
@@ -88,8 +89,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["Authorization", "Content-Type"],
 )
+app.middleware("http")(collect_http_metrics)
 app.include_router(auth_router)
 app.include_router(users_router)
+
+
+@app.get("/metrics", include_in_schema=False)
+def metrics():
+    return metrics_response()
 
 
 @app.get("/health", tags=["Salud"])
