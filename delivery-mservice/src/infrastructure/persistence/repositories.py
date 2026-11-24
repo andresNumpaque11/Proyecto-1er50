@@ -33,6 +33,9 @@ class OrderRepo:
 
         return order_from(document) if document else None
 
+    def list(self, limit=200):
+        return [order_from(d) for d in self.c.find().sort("created_at", -1).limit(limit)]
+
     def exists(self, order_id, session=None):
         return (
             self.c.find_one(
@@ -71,6 +74,9 @@ class RouteRepo:
             upsert=True,
             session=session,
         )
+
+    def list(self, limit=200):
+        return [route_from(d) for d in self.c.find().sort("created_at", -1).limit(limit)]
 
     def find_open_by_city(self, city, session=None):
         document = self.c.find_one(
@@ -138,6 +144,9 @@ class DriverRepo:
             upsert=True,
             session=session,
         )
+
+    def list(self, limit=200):
+        return [driver_from(d) for d in self.c.find().sort("created_at", -1).limit(limit)]
 
     def available(self, session=None):
         documents = self.c.find(

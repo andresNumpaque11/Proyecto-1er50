@@ -16,6 +16,13 @@ class Settings(BaseSettings):
     event_publisher_mode: str = "log"
     event_publisher_url: str | None = None
     event_publisher_timeout_seconds: int = 5
+    rabbitmq_host: str = "rabbitmq"
+    rabbitmq_port: int = 5672
+    rabbitmq_user: str = "guest"
+    rabbitmq_password: str = "guest"
+    rabbitmq_exchange: str = "sigtam.events"
+    jwt_secret: str = ""
+    auth_service_url: str = "http://localhost:8000"
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)
 
 

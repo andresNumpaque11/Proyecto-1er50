@@ -2,8 +2,8 @@ from pydantic import BaseModel, Field
 
 
 class AddressIn(BaseModel):
-    street: str
-    city: str
+    street: str = Field(min_length=2)
+    city: str = Field(min_length=2)
     postal_code: str | None = None
     latitude: float | None = Field(None, ge=-90, le=90)
     longitude: float | None = Field(None, ge=-180, le=180)
@@ -21,11 +21,15 @@ class OrderOut(BaseModel):
     order_id: str
     status: str
     route_id: str | None
+    destination: dict | None = None
+    priority: str | None = None
+    external_reference: str | None = None
+    created_at: str | None = None
 
 
 class DriverIn(BaseModel):
-    driver_id: str
-    name: str
+    driver_id: str = Field(min_length=1)
+    name: str = Field(min_length=2)
     phone: str | None = None
 
 
@@ -46,3 +50,4 @@ class RouteOut(BaseModel):
     status: str
     driver_id: str | None
     stops: list[dict]
+    created_at: str | None = None

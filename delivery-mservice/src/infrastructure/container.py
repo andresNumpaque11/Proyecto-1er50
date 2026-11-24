@@ -1,7 +1,7 @@
 from .config import settings
 from .persistence.mongo import MongoConnection
 from .persistence.repositories import OrderRepo, RouteRepo, DriverRepo, OutboxRepo
-from .messaging.publisher import LogPublisher, HttpPublisher
+from .messaging.publisher import LogPublisher, HttpPublisher, RabbitMQPublisher
 from ..domain.services.route_planning import (
     RoutePlanningService,
     CityAndCapacityStrategy,
@@ -51,17 +51,17 @@ class Container:
         )
         self.register_driver = RegisterDriver(self.drivers)
         self.availability = ChangeAvailability(self.drivers)
-        self.start_route = StartRoute(self.routes, self.drivers, self.outbox)
+        self.start_route = StartRoute(self.routes, self.drivers, self.outbox, self.orders)
         self.complete_stop = CompleteStop(
             self.routes, self.orders, self.drivers, self.outbox
         )
-        self.publisher = (
-            HttpPublisher(
-                settings.event_publisher_url, settings.event_publisher_timeout_seconds
+        if settings.event_publisher_mode == "http" and settings.event_publisher_url:
+            self.publisher = HttpPublisher(settings.event_publisher_url, settings.event_publisher_timeout_seconds)
+        elif settings.event_publisher_mode == "rabbitmq":
+            self.publisher = RabbitMQPublisher(
+                settings.rabbitmq_host, settings.rabbitmq_port,
+                settings.rabbitmq_user, settings.rabbitmq_password,
+                settings.rabbitmq_exchange
             )
-            if settings.event_publisher_mode == "http" and settings.event_publisher_url
-            else LogPublisher()
-        )
-
-
-container = Container()
+        else:
+            self.publisher = LogPublisher()

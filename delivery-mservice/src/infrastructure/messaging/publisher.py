@@ -32,3 +32,42 @@ class HttpPublisher:
         with urlopen(req, timeout=self.timeout) as r:
             if r.status >= 300:
                 raise RuntimeError(f"Publisher status {r.status}")
+
+
+class RabbitMQPublisher:
+    """Publica eventos de dominio en el exchange topic compartido del proyecto."""
+    def __init__(self, host, port, username, password, exchange):
+        self.host, self.port = host, port
+        self.username, self.password = username, password
+        self.exchange = exchange
+
+    def publish(self, event):
+        import pika
+        credentials = pika.PlainCredentials(self.username, self.password)
+        params = pika.ConnectionParameters(
+            host=self.host, port=self.port, credentials=credentials,
+            heartbeat=30, blocked_connection_timeout=5
+        )
+        body = json.dumps({
+            "event_name": event.event_name,
+            "occurred_at": event.occurred_at.isoformat(),
+            "aggregate_id": event.aggregate_id,
+            "payload": event.payload,
+            "source": "delivery-service",
+        }, default=str).encode()
+        connection = pika.BlockingConnection(params)
+        try:
+            channel = connection.channel()
+            channel.exchange_declare(exchange=self.exchange, exchange_type="topic", durable=True)
+            channel.basic_publish(
+                exchange=self.exchange,
+                routing_key=event.event_name,
+                body=body,
+                properties=pika.BasicProperties(
+                    content_type="application/json", delivery_mode=2,
+                    message_id=f"{event.event_name}:{event.aggregate_id}:{event.occurred_at.isoformat()}"
+                ),
+                mandatory=False,
+            )
+        finally:
+            connection.close()

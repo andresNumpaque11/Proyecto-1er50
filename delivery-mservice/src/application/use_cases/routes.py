@@ -2,16 +2,24 @@ from ...domain.shared.ids import RouteId, OrderId
 
 
 class StartRoute:
-    def __init__(self, routes, drivers, outbox):
+    def __init__(self, routes, drivers, outbox, orders=None):
         self.routes = routes
         self.drivers = drivers
         self.outbox = outbox
+        self.orders = orders
 
     def execute(self, route_id):
         r = self.routes.get(RouteId.from_string(route_id))
         if not r:
             raise ValueError("Ruta no encontrada")
         r.start()
+        if self.orders:
+            for stop in r.stops:
+                order = self.orders.get(stop.order_id)
+                if order and order.status.value == "ASSIGNED":
+                    order.start_delivery()
+                    self.orders.save(order)
+                    self._events(order)
         if r.driver_id:
             d = self.drivers.get(r.driver_id)
             if d:

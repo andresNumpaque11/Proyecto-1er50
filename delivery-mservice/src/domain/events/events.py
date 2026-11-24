@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 
 @dataclass(frozen=True)
 class DomainEvent:
@@ -9,4 +9,4 @@ class DomainEvent:
     payload: dict
 
 def event(name, aggregate_id, payload, when=None):
-    return DomainEvent(name, when or datetime.utcnow(), aggregate_id, payload)
+    return DomainEvent(name, when or datetime.now(timezone.utc), aggregate_id, payload)
