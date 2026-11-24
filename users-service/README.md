@@ -28,6 +28,21 @@ npm run dev
 
 La API queda en `http://localhost:8000`; su documentación interactiva está en `/docs`. La aplicación web se sirve en `http://localhost:5173`. Por defecto se utiliza SQLite en `users.db`. Para usar otra base de datos SQLAlchemy, configura `DATABASE_URL`.
 
+### Frontend integrado
+
+El frontend incluye módulos para usuarios, inventario, turnos y domicilios. En desarrollo, Vite reenvía las peticiones a cada microservicio:
+
+| Servicio | URL local predeterminada |
+| --- | --- |
+| Usuarios | `http://localhost:8000` |
+| Inventario | `http://localhost:7879` |
+| Turnos | `http://localhost:8081` |
+| Domicilios | `http://localhost:8002` |
+
+Inicia los servicios correspondientes antes de usar sus módulos. Si alguno usa otro host o puerto, crea `frontend/.env.local` y configura `VITE_USERS_SERVICE_URL`, `VITE_INVENTORY_SERVICE_URL`, `VITE_TURNOS_SERVICE_URL` o `VITE_DELIVERY_SERVICE_URL`. Cada valor debe ser el origen del servicio, sin agregar `/api`. Reinicia Vite luego de cambiarlo.
+
+El proxy evita requerir configuración CORS entre puertos durante el desarrollo. En despliegues, sirve el frontend detrás de un proxy inverso que envíe las rutas `/api/auth` y `/api/users` a usuarios, `/api/inventory` a inventario, `/api/turnos` y `/api/disponibilidad` a turnos, y `/api/v1` a domicilios. El historial de solicitudes de inventario y los pedidos/repartidores de domicilios solo se muestran durante la sesión actual, porque esos servicios no exponen rutas para consultarlos/listarlos.
+
 El administrador inicial se crea al iniciar el backend si se configuran juntos `ADMIN_EMAIL` y `ADMIN_PASSWORD`. Si ambas variables están vacías, no se crea automáticamente ninguna cuenta administrativa. El registro público siempre asigna el rol `paciente`; solo un administrador puede crear cuentas `farmaceutico`. Al iniciar, el servicio migra automáticamente las cuentas existentes con el rol `user` a `paciente`.
 
 ## API

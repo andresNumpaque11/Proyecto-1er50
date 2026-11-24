@@ -23,24 +23,16 @@ app.get('/', (_req: Request, res: Response) => {
   });
 });
 
-async function startServer():Promise<void> {
-    try {
-        await connectDB();
-        app.listen(PORT, () => {
-      console.log(
-        `Microservicio de Inventario ejecutándose en el puerto ${PORT}`,
-      );
+async function startServer(): Promise<void> {
+  try {
+    await connectDB();
+    app.listen(PORT, () => {
+      console.log(`Microservicio de Inventario ejecutándose en el puerto ${PORT}`);
+      registerWithEureka(PORT);
     });
-
-    } catch (error) {
-         console.error('Error al iniciar el microservicio:', error);
+  } catch (error) {
+    console.error('Error al iniciar el microservicio:', error);
     process.exit(1);
-    }
-    
+  }
 }
-app.listen(PORT, () => {
-  console.log(`Microservicio de Inventario ejecutándose en el puerto ${PORT}`);
-  registerWithEureka(PORT);
-});
-
 startServer();

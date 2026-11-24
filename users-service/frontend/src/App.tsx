@@ -1,5 +1,6 @@
 import { FormEvent, useCallback, useEffect, useState } from "react";
-    //  import TurnosPanel from "./turnos/TurnosPanel";
+import Operations from "./Operations";
+import { request } from "./api";
 
 type User = {
   id: number;
@@ -21,25 +22,7 @@ const roleLabels: Record<User["role"], string> = {
   farmaceutico: "Farmacéutico",
 };
 
-const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 const TOKEN_KEY = "users-service-token";
-
-async function request<T>(path: string, token?: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_URL}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...init?.headers,
-    },
-  });
-  if (!response.ok) {
-    const body = await response.json().catch(() => null);
-    throw new Error(body?.detail ?? "No fue posible completar la solicitud.");
-  }
-  if (response.status === 204) return undefined as T;
-  return response.json() as Promise<T>;
-}
 
 export default function App() {
   const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY) ?? "");
@@ -50,6 +33,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [activeSection, setActiveSection] = useState("overview");
 
   const signOut = useCallback(() => {
     localStorage.removeItem(TOKEN_KEY);
@@ -62,6 +46,7 @@ export default function App() {
     try {
       const profile = await request<User>("/api/auth/me", currentToken);
       setUser(profile);
+      setActiveSection(profile.role === "admin" ? "users" : profile.role === "farmaceutico" ? "inventory" : "turnos");
       if (profile.role === "admin") {
         setUsers(await request<User[]>("/api/users", currentToken));
       } else {
@@ -104,6 +89,7 @@ export default function App() {
         });
         localStorage.setItem(TOKEN_KEY, auth.access_token);
         setToken(auth.access_token);
+        setActiveSection(auth.user.role === "admin" ? "users" : auth.user.role === "farmaceutico" ? "inventory" : "turnos");
         setLoading(true);
       }
     } catch (cause) {
@@ -174,11 +160,11 @@ export default function App() {
     return (
       <main className="auth-layout">
         <section className="intro">
-          <div className="brand"><span className="brand-icon">U</span> Usuarios</div>
+          <div className="brand"><span className="brand-icon">S</span> SIGTAM</div>
           <div>
             <p className="eyebrow">PLATAFORMA DE ACCESO</p>
-            <h1>Una forma más segura de gestionar tus usuarios.</h1>
-            <p className="intro-copy">Inicia sesión para acceder a tu cuenta y administrar permisos desde un solo lugar.</p>
+            <h1>Una plataforma para coordinar la gestión de medicamentos.</h1>
+            <p className="intro-copy">Inicia sesión para consultar inventario, coordinar turnos y gestionar domicilios desde un solo lugar.</p>
           </div>
           <p className="intro-foot">Autenticación protegida con tokens de acceso JWT.</p>
         </section>
@@ -209,17 +195,34 @@ export default function App() {
   return (
     <main className="dashboard">
       <header className="topbar">
-        <a className="brand" href="#"><span className="brand-icon">U</span> Usuarios</a>
+        <a className="brand" href="#" onClick={(event) => { event.preventDefault(); setActiveSection("overview"); }}><span className="brand-icon">S</span> SIGTAM</a>
+        <nav className="main-nav" aria-label="Secciones principales">
+          <button className={activeSection === "overview" ? "selected" : ""} onClick={() => setActiveSection("overview")}>Inicio</button>
+          {user.role === "admin" && <button className={activeSection === "users" ? "selected" : ""} onClick={() => setActiveSection("users")}>Usuarios</button>}
+          <button className={activeSection === "inventory" ? "selected" : ""} onClick={() => setActiveSection("inventory")}>Inventario</button>
+          <button className={activeSection === "turnos" ? "selected" : ""} onClick={() => setActiveSection("turnos")}>Turnos</button>
+          {user.role !== "paciente" && <button className={activeSection === "delivery" ? "selected" : ""} onClick={() => setActiveSection("delivery")}>Domicilios</button>}
+        </nav>
         <div className="account"><span className="avatar">{user.full_name[0]?.toUpperCase()}</span><span className="account-name">{user.full_name}<small>{roleLabels[user.role]}</small></span><button className="logout-button" onClick={signOut}>Cerrar sesión</button></div>
       </header>
       <section className="welcome">
-        <p className="eyebrow">PANEL DE CONTROL</p>
-        <h1>{user.role === "admin" ? "Gestión de usuarios" : `Hola, ${user.full_name.split(" ")[0]}`}</h1>
-        <p>{user.role === "admin" ? "Administra el acceso, los roles y el estado de las cuentas." : "Tu cuenta está activa. Aquí puedes consultar tu información de acceso."}</p>
+        <p className="eyebrow">GESTIÓN DE MEDICAMENTOS</p>
+        <h1>{activeSection === "users" ? "Gestión de usuarios" : activeSection === "inventory" ? "Inventario de medicamentos" : activeSection === "turnos" ? "Gestión de turnos" : activeSection === "delivery" ? "Domicilios y rutas" : `Hola, ${user.full_name.split(" ")[0]}`}</h1>
+        <p>{activeSection === "users" ? "Administra el acceso, los roles y el estado de las cuentas." : activeSection === "inventory" ? "Consulta existencias, administra lotes y gestiona solicitudes." : activeSection === "turnos" ? "Publica horarios, solicita turnos y coordina la atención." : activeSection === "delivery" ? "Registra pedidos y domiciliarios, y actualiza el estado de las rutas." : "Un espacio de trabajo integrado para los servicios de la plataforma."}</p>
       </section>
       {error && <p className="message error dashboard-message" role="alert">{error}</p>}
       {notice && <p className="message success dashboard-message" role="status">{notice}</p>}
-      {user.role === "admin" ? (
+      {activeSection === "overview" ? (
+        <div className="overview-grid">
+          <section className="profile-card"><span className="avatar profile-avatar">{user.full_name[0]?.toUpperCase()}</span><div><p className="eyebrow">TU PERFIL</p><h2>{user.full_name}</h2><p>{roleLabels[user.role]} · {user.email}</p><span className="status active"><i />Cuenta activa</span></div></section>
+          <div className="service-cards">
+            <button className="service-card" onClick={() => setActiveSection("inventory")}><span className="service-icon">01</span><span><strong>Inventario</strong><small>Medicamentos, lotes y solicitudes</small></span><b>→</b></button>
+            <button className="service-card" onClick={() => setActiveSection("turnos")}><span className="service-icon">02</span><span><strong>Turnos</strong><small>Disponibilidad y atención de pacientes</small></span><b>→</b></button>
+            {user.role !== "paciente" && <button className="service-card" onClick={() => setActiveSection("delivery")}><span className="service-icon">03</span><span><strong>Domicilios</strong><small>Pedidos, repartidores y rutas</small></span><b>→</b></button>}
+            {user.role === "admin" && <button className="service-card" onClick={() => setActiveSection("users")}><span className="service-icon">04</span><span><strong>Usuarios</strong><small>Cuentas y permisos de acceso</small></span><b>→</b></button>}
+          </div>
+        </div>
+      ) : activeSection === "users" && user.role === "admin" ? (
         <section className="user-card">
           <div className="section-heading">
             <div><h2>Cuentas registradas</h2><p>{users.length} {users.length === 1 ? "cuenta" : "cuentas"} en el sistema</p></div>
@@ -253,11 +256,10 @@ export default function App() {
             </table>
           </div>
         </section>
-      ) : (
-        <section className="profile-card"><span className="avatar profile-avatar">{user.full_name[0]?.toUpperCase()}</span><div><p className="eyebrow">TU PERFIL</p><h2>{user.full_name}</h2><p>{user.email}</p><span className="status active"><i />Cuenta activa</span></div></section>
-      )}
-      {/* <TurnosPanel user={user} /> */}
-      <footer className="footer">Control de acceso basado en roles <span>•</span> Sesión protegida con JWT</footer>
+      ) : activeSection === "inventory" || activeSection === "turnos" || activeSection === "delivery" ? (
+        <Operations section={activeSection} user={user} />
+      ) : <p className="message error">No tienes permisos para acceder a esta sección.</p>}
+      <footer className="footer">Gestión integrada de medicamentos <span>•</span> Sesión protegida con JWT</footer>
     </main>
   );
 }
